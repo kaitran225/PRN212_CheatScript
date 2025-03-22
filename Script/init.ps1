@@ -1,12 +1,81 @@
-# Collect all inputs upfront
+# Prompt user for base information
 Write-Host "Please provide the following information:" -ForegroundColor Cyan
 Write-Host "----------------------------------------"
 
-# Get project paths and trim them
-$repoPath = (Read-Host "Enter the full path of the Repository project").Trim()
-$servicePath = (Read-Host "Enter the full path of the Services project").Trim()
-$wpfPath = (Read-Host "Enter the full path of the main WPF project").Trim()
+# Get solution directory and database name
+$solutionPath = (Read-Host "Enter the directory path of the existing solution").Trim()
 $databaseName = (Read-Host "Enter the database name (e.g., Sp25PerfumeStoreDB)").Trim()
+
+# Extract solution name from path
+$solutionName = (Get-Item $solutionPath).Name
+
+# Ask for project structure
+Write-Host "`nChoose project structure:" -ForegroundColor Yellow
+Write-Host "1. Two projects (Repository and Service in same project)"
+Write-Host "2. Three projects (Separate Repository, Service, and WPF projects)"
+$structureChoice = Read-Host "Enter your choice (1 or 2)"
+
+# Validate solution exists
+$solutionFile = Join-Path $solutionPath "$solutionName.sln"
+if (-not (Test-Path $solutionFile)) {
+    Write-Host "Error: Solution file not found: $solutionFile" -ForegroundColor Red
+    exit
+}
+
+# Change to the solution directory
+Set-Location -Path $solutionPath
+
+if ($structureChoice -eq "1") {
+    # Two-project structure
+    $wpfAppName = "$solutionName.App"
+    $libraryName = "$solutionName.Library"
+    
+    Write-Host "`nCreating projects..." -ForegroundColor Green
+    Write-Host "Creating WPF Application: $wpfAppName"
+    dotnet new wpf -n $wpfAppName
+    
+    Write-Host "Creating Library Project: $libraryName"
+    dotnet new classlib -n $libraryName
+    
+    # Add projects to solution
+    Write-Host "`nAdding projects to solution..." -ForegroundColor Yellow
+    dotnet sln add "$wpfAppName\$wpfAppName.csproj"
+    dotnet sln add "$libraryName\$libraryName.csproj"
+    
+    # Add reference from WPF to Library
+    Write-Host "Adding project reference..." -ForegroundColor Yellow
+    dotnet add "$wpfAppName\$wpfAppName.csproj" reference "$libraryName\$libraryName.csproj"
+    
+    Write-Host "`nTwo-project solution created successfully!" -ForegroundColor Green
+} else {
+    # Three-project structure
+    $wpfAppName = "$solutionName.App"
+    $serviceName = "$solutionName.Service"
+    $repoName = "$solutionName.Repository"
+    
+    Write-Host "`nCreating projects..." -ForegroundColor Green
+    Write-Host "Creating WPF Application: $wpfAppName"
+    dotnet new wpf -n $wpfAppName
+    
+    Write-Host "Creating Service Project: $serviceName"
+    dotnet new classlib -n $serviceName
+    
+    Write-Host "Creating Repository Project: $repoName"
+    dotnet new classlib -n $repoName
+    
+    # Add projects to solution
+    Write-Host "`nAdding projects to solution..." -ForegroundColor Yellow
+    dotnet sln add "$wpfAppName\$wpfAppName.csproj"
+    dotnet sln add "$serviceName\$serviceName.csproj"
+    dotnet sln add "$repoName\$repoName.csproj"
+    
+    # Add project references
+    Write-Host "Adding project references..." -ForegroundColor Yellow
+    dotnet add "$wpfAppName\$wpfAppName.csproj" reference "$serviceName\$serviceName.csproj"
+    dotnet add "$serviceName\$serviceName.csproj" reference "$repoName\$repoName.csproj"
+    
+    Write-Host "`nThree-project solution created successfully!" -ForegroundColor Green
+}
 
 # Define SQL Server credentials and connection settings
 $serverName = "KAINOTE\SQLEXPRESS"    # SQL Server instance name
@@ -19,93 +88,12 @@ $connectionString = "Server=$serverName;Database=$databaseName;User Id=$userId;P
 # Generate context name
 $contextName = $databaseName + "Context"
 
-# Validate paths exist and remove any trailing spaces
-$repoPath = $repoPath.TrimEnd()
-$servicePath = $servicePath.TrimEnd()
-$wpfPath = $wpfPath.TrimEnd()
-
-if (-not (Test-Path $repoPath)) {
-    Write-Host "Error: Repository project path does not exist: $repoPath" -ForegroundColor Red
-    exit
-}
-if (-not (Test-Path $servicePath)) {
-    Write-Host "Error: Services project path does not exist: $servicePath" -ForegroundColor Red
-    exit
-}
-if (-not (Test-Path $wpfPath)) {
-    Write-Host "Error: WPF project path does not exist: $wpfPath" -ForegroundColor Red
-    exit
-}
-
-# Validate project files exist (ensure no extra spaces in path construction)
-$repoProjectFile = Join-Path $repoPath "$(Split-Path -Path $repoPath -Leaf).csproj"
-$serviceProjectFile = Join-Path $servicePath "$(Split-Path -Path $servicePath -Leaf).csproj"
-$wpfProjectFile = Join-Path $wpfPath "$(Split-Path -Path $wpfPath -Leaf).csproj"
-
-if (-not (Test-Path $repoProjectFile)) {
-    Write-Host "Error: Repository project file not found: $repoProjectFile" -ForegroundColor Red
-    exit
-}
-if (-not (Test-Path $serviceProjectFile)) {
-    Write-Host "Error: Services project file not found: $serviceProjectFile" -ForegroundColor Red
-    exit
-}
-if (-not (Test-Path $wpfProjectFile)) {
-    Write-Host "Error: WPF project file not found: $wpfProjectFile" -ForegroundColor Red
-    exit
-}
-
-# Validate project files are valid XML
-Write-Host "`nValidating project files..." -ForegroundColor Cyan
-try {
-    $repoXml = [xml](Get-Content $repoProjectFile -Raw)
-    Write-Host "Repository project file is valid XML" -ForegroundColor Green
-} catch {
-    Write-Host "Error: Repository project file is not valid XML: $_" -ForegroundColor Red
-    exit
-}
-
-try {
-    $serviceXml = [xml](Get-Content $serviceProjectFile -Raw)
-    Write-Host "Service project file is valid XML" -ForegroundColor Green
-} catch {
-    Write-Host "Error: Service project file is not valid XML: $_" -ForegroundColor Red
-    exit
-}
-
-try {
-    $wpfXml = [xml](Get-Content $wpfProjectFile -Raw)
-    Write-Host "WPF project file is valid XML" -ForegroundColor Green
-} catch {
-    Write-Host "Error: WPF project file is not valid XML: $_" -ForegroundColor Red
-    exit
-}
-# Extract project names
-$repoProjectName = Split-Path -Path $repoPath -Leaf
-$serviceProjectName = Split-Path -Path $servicePath -Leaf
-$wpfProjectName = Split-Path -Path $wpfPath -Leaf
-
-# Get solution directory
-$solutionDir = Split-Path -Path $repoPath -Parent
-
 # Show summary of what will be done
 Write-Host "`nSummary of operations to be performed:" -ForegroundColor Yellow
 Write-Host "----------------------------------------"
-Write-Host "1. Install packages in all projects:"
-Write-Host "   - Repository project: $repoProjectName"
-Write-Host "   - Service project: $serviceProjectName"
-Write-Host "   - WPF project: $wpfProjectName"
-Write-Host "`n2. Add project references:"
-Write-Host "   - $wpfProjectName -> $serviceProjectName"
-Write-Host "   - $serviceProjectName -> $repoProjectName"
-Write-Host "`n3. Generate database context:"
-Write-Host "   - Database: $databaseName"
-Write-Host "   - Server: $serverName"
-Write-Host "   - Context: $contextName"
-Write-Host "   - Output: $repoPath\Models"
-Write-Host "`n4. Generate repository and service layers:"
-Write-Host "   - Base classes and interfaces"
-Write-Host "   - Entity-specific repositories and services"
+Write-Host "1. Install required packages"
+Write-Host "2. Generate database context"
+Write-Host "3. Generate repository and service layers"
 Write-Host "----------------------------------------"
 
 # Ask for confirmation
@@ -132,7 +120,7 @@ $packages = @(
 
 # Install packages for each project
 Write-Host "Installing packages for Repository project..." -ForegroundColor Green
-Push-Location $repoPath
+Push-Location $repoName
 foreach ($package in $packages) {
     Write-Host "Installing package: $package" -ForegroundColor Yellow
     dotnet add package $package --version 8.0.2
@@ -140,7 +128,7 @@ foreach ($package in $packages) {
 Pop-Location
 
 Write-Host "`nInstalling packages for Service project..." -ForegroundColor Green
-Push-Location $servicePath
+Push-Location $serviceName
 foreach ($package in $packages) {
     Write-Host "Installing package: $package" -ForegroundColor Yellow
     dotnet add package $package --version 8.0.2
@@ -148,7 +136,7 @@ foreach ($package in $packages) {
 Pop-Location
 
 Write-Host "`nInstalling packages for WPF project..." -ForegroundColor Green
-Push-Location $wpfPath
+Push-Location $wpfAppName
 foreach ($package in $packages) {
     Write-Host "Installing package: $package" -ForegroundColor Yellow
     dotnet add package $package --version 8.0.2
@@ -157,16 +145,9 @@ Pop-Location
 
 Write-Host "`nPackage installation completed!" -ForegroundColor Green
 
-# Add project references
-Write-Host "`nAdding project references..." -ForegroundColor Cyan
-Write-Host "Adding reference from $wpfProjectName to $serviceProjectName" -ForegroundColor Green
-dotnet add "$wpfProjectFile" reference "$serviceProjectFile"
-Write-Host "Adding reference from $serviceProjectName to $repoProjectName" -ForegroundColor Green
-dotnet add "$serviceProjectFile" reference "$repoProjectFile"
-
 # Generate database context
 Write-Host "`nGenerating database context..." -ForegroundColor Cyan
-$modelsPath = Join-Path $repoPath "Models"
+$modelsPath = Join-Path $repoName "Models"
 if (!(Test-Path $modelsPath)) {
     New-Item -ItemType Directory -Path $modelsPath -Force
 }
@@ -179,14 +160,14 @@ $command = "dotnet ef dbcontext scaffold `"$connectionString`" " + `
     "Microsoft.EntityFrameworkCore.SqlServer " + `
     "--output-dir Models " + `
     "--context $contextName " + `
-    "--project `"$repoProjectFile`" " + `
-    "--startup-project `"$wpfProjectFile`" " + `
+    "--project `"$repoName\$repoName.csproj`" " + `
+    "--startup-project `"$wpfAppName\$wpfAppName.csproj`" " + `
     "--force"
 
 Write-Host "Executing command: $command" -ForegroundColor Yellow
 
 # Change to the solution directory before running the command
-Push-Location $solutionDir
+Push-Location $solutionPath
 try {
     Invoke-Expression $command
     Write-Host "Scaffolding completed successfully!" -ForegroundColor Green
@@ -201,10 +182,10 @@ Pop-Location
 Write-Host "`nStarting repository and service generation..." -ForegroundColor Cyan
 
 # Define paths for Models, Repositories, and IRepositories
-$repositoriesPath = "$repoPath\Repositories"
-$iRepositoriesPath = "$repoPath\IRepositories"
-$outputServicePath = "$servicePath\Services"
-$iServicePath = "$servicePath\IServices"
+$repositoriesPath = "$repoName\Repositories"
+$iRepositoriesPath = "$repoName\IRepositories"
+$outputServicePath = "$serviceName\Services"
+$iServicePath = "$serviceName\IServices"
 
 # Ensure output directories exist
 if (!(Test-Path $repositoriesPath)) {
@@ -257,7 +238,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
-namespace $repoProjectName.IRepositories
+namespace $repoName.IRepositories
 {
     public interface IRepositoryBase<T> where T : class
     {
@@ -276,14 +257,14 @@ namespace $repoProjectName.IRepositories
 # Generate RepositoryBase class
 $repositoryBaseContent = @"
 using Microsoft.EntityFrameworkCore;
-using $repoProjectName.IRepositories;
-using $repoProjectName.Models;
+using $repoName.IRepositories;
+using $repoName.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace $repoProjectName.Repositories
+namespace $repoName.Repositories
 {
     public class RepositoryBase<T> : IRepositoryBase<T> where T : class
     {
@@ -353,7 +334,7 @@ namespace $repoProjectName.Repositories
 $iUnitOfWorkContent = @"
 using System;
 
-namespace $repoProjectName.IRepositories
+namespace $repoName.IRepositories
 {
     public interface IUnitOfWork : IDisposable
     {
@@ -375,11 +356,11 @@ $iUnitOfWorkContent += @"
 
 # Generate UnitOfWork class
 $unitOfWorkContent = @"
-using $repoProjectName.Models;
-using $repoProjectName.IRepositories;
+using $repoName.Models;
+using $repoName.IRepositories;
 using System;
 
-namespace $repoProjectName.Repositories
+namespace $repoName.Repositories
 {
     public class UnitOfWork : IUnitOfWork
     {
@@ -467,7 +448,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
-namespace $serviceProjectName.IServices
+namespace $serviceName.IServices
 {
     public interface IServiceBase<T> where T : class
     {
@@ -489,11 +470,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using $repoProjectName.IRepositories;
-using $serviceProjectName.IServices;
+using $repoName.IRepositories;
+using $serviceName.IServices;
 
 
-namespace $serviceProjectName.Services
+namespace $serviceName.Services
 {
     public abstract class ServiceBase<T> : IServiceBase<T> where T : class
     {
@@ -579,15 +560,15 @@ Write-Output "Generating entity repositories and services..."
 
 # Generate entity repositories and services
 foreach ($entityName in $entities) {
-    $namespace = "$repoProjectName.IRepositories"
-    $repoNamespace = "$repoProjectName.Repositories"
-    $serviceNamespace = "$serviceProjectName.Services"
-    $iServiceNamespace = "$serviceProjectName.IServices"
+    $namespace = "$repoName.IRepositories"
+    $repoNamespace = "$repoName.Repositories"
+    $serviceNamespace = "$serviceName.Services"
+    $iServiceNamespace = "$serviceName.IServices"
 
     # Interface content
     $interfaceContent = @"
 using System.Collections.Generic;
-using $repoProjectName.Models;
+using $repoName.Models;
 
 namespace $namespace
 {
@@ -599,7 +580,7 @@ namespace $namespace
 
     # Repository class content
     $repositoryContent = @"
-using $repoProjectName.Models;
+using $repoName.Models;
 using $namespace;
 using System.Collections.Generic;
 using System.Linq;
@@ -620,7 +601,7 @@ namespace $repoNamespace
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using $repoProjectName.Models;
+using $repoName.Models;
 
 namespace $iServiceNamespace
 {
@@ -635,7 +616,7 @@ namespace $iServiceNamespace
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using $repoProjectName.Models;
+using $repoName.Models;
 using $namespace;
 using $iServiceNamespace;
 
