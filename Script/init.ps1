@@ -1,61 +1,206 @@
-# Prompt user for project directories
-$repoPath = Read-Host "Enter the full path of the Repository project"
-$servicePath = Read-Host "Enter the full path of the Services project"
-$wpfPath = Read-Host "Enter the full path of the main WPF project"
+# Collect all inputs upfront
+Write-Host "Please provide the following information:" -ForegroundColor Cyan
+Write-Host "----------------------------------------"
 
+# Get project paths and trim them
+$repoPath = (Read-Host "Enter the full path of the Repository project").Trim()
+$servicePath = (Read-Host "Enter the full path of the Services project").Trim()
+$wpfPath = (Read-Host "Enter the full path of the main WPF project").Trim()
+$databaseName = (Read-Host "Enter the database name (e.g., Sp25PerfumeStoreDB)").Trim()
+
+# Define SQL Server credentials and connection settings
+$serverName = "KAINOTE\SQLEXPRESS"    # SQL Server instance name
+$userId = "sa"                        # SQL Server username
+$password = "123456"                  # SQL Server password
+
+# Build the connection string dynamically
+$connectionString = "Server=$serverName;Database=$databaseName;User Id=$userId;Password=$password;TrustServerCertificate=True;"
+
+# Generate context name
+$contextName = $databaseName + "Context"
+
+# Validate paths exist and remove any trailing spaces
+$repoPath = $repoPath.TrimEnd()
+$servicePath = $servicePath.TrimEnd()
+$wpfPath = $wpfPath.TrimEnd()
+
+if (-not (Test-Path $repoPath)) {
+    Write-Host "Error: Repository project path does not exist: $repoPath" -ForegroundColor Red
+    exit
+}
+if (-not (Test-Path $servicePath)) {
+    Write-Host "Error: Services project path does not exist: $servicePath" -ForegroundColor Red
+    exit
+}
+if (-not (Test-Path $wpfPath)) {
+    Write-Host "Error: WPF project path does not exist: $wpfPath" -ForegroundColor Red
+    exit
+}
+
+# Validate project files exist (ensure no extra spaces in path construction)
+$repoProjectFile = Join-Path $repoPath "$(Split-Path -Path $repoPath -Leaf).csproj"
+$serviceProjectFile = Join-Path $servicePath "$(Split-Path -Path $servicePath -Leaf).csproj"
+$wpfProjectFile = Join-Path $wpfPath "$(Split-Path -Path $wpfPath -Leaf).csproj"
+
+if (-not (Test-Path $repoProjectFile)) {
+    Write-Host "Error: Repository project file not found: $repoProjectFile" -ForegroundColor Red
+    exit
+}
+if (-not (Test-Path $serviceProjectFile)) {
+    Write-Host "Error: Services project file not found: $serviceProjectFile" -ForegroundColor Red
+    exit
+}
+if (-not (Test-Path $wpfProjectFile)) {
+    Write-Host "Error: WPF project file not found: $wpfProjectFile" -ForegroundColor Red
+    exit
+}
+
+# Validate project files are valid XML
+Write-Host "`nValidating project files..." -ForegroundColor Cyan
+try {
+    $repoXml = [xml](Get-Content $repoProjectFile -Raw)
+    Write-Host "Repository project file is valid XML" -ForegroundColor Green
+} catch {
+    Write-Host "Error: Repository project file is not valid XML: $_" -ForegroundColor Red
+    exit
+}
+
+try {
+    $serviceXml = [xml](Get-Content $serviceProjectFile -Raw)
+    Write-Host "Service project file is valid XML" -ForegroundColor Green
+} catch {
+    Write-Host "Error: Service project file is not valid XML: $_" -ForegroundColor Red
+    exit
+}
+
+try {
+    $wpfXml = [xml](Get-Content $wpfProjectFile -Raw)
+    Write-Host "WPF project file is valid XML" -ForegroundColor Green
+} catch {
+    Write-Host "Error: WPF project file is not valid XML: $_" -ForegroundColor Red
+    exit
+}
 # Extract project names
 $repoProjectName = Split-Path -Path $repoPath -Leaf
 $serviceProjectName = Split-Path -Path $servicePath -Leaf
 $wpfProjectName = Split-Path -Path $wpfPath -Leaf
 
-# Get solution directory (parent of repository project)
+# Get solution directory
 $solutionDir = Split-Path -Path $repoPath -Parent
 
-# Define the packages and versions
-$packages = @(
-    "Microsoft.EntityFrameworkCore.SqlServer -Version 8.0.2",
-    "Microsoft.EntityFrameworkCore.Tools -Version 8.0.2",
-    "Microsoft.EntityFrameworkCore.Design -Version 8.0.2",
-    "Microsoft.Extensions.Configuration -Version 8.0.2",
-    "Microsoft.Extensions.Configuration.Json -Version 8.0.2"
-)
+# Show summary of what will be done
+Write-Host "`nSummary of operations to be performed:" -ForegroundColor Yellow
+Write-Host "----------------------------------------"
+Write-Host "1. Install packages in all projects:"
+Write-Host "   - Repository project: $repoProjectName"
+Write-Host "   - Service project: $serviceProjectName"
+Write-Host "   - WPF project: $wpfProjectName"
+Write-Host "`n2. Add project references:"
+Write-Host "   - $wpfProjectName -> $serviceProjectName"
+Write-Host "   - $serviceProjectName -> $repoProjectName"
+Write-Host "`n3. Generate database context:"
+Write-Host "   - Database: $databaseName"
+Write-Host "   - Server: $serverName"
+Write-Host "   - Context: $contextName"
+Write-Host "   - Output: $repoPath\Models"
+Write-Host "`n4. Generate repository and service layers:"
+Write-Host "   - Base classes and interfaces"
+Write-Host "   - Entity-specific repositories and services"
+Write-Host "----------------------------------------"
 
-Write-Host "Installing required packages..." -ForegroundColor Cyan
-
-# Get all .csproj files in the solution directory
-$projects = Get-ChildItem -Path $solutionDir -Recurse -Filter *.csproj
-
-# Check if any .csproj files were found
-if ($projects.Count -eq 0) {
-    Write-Host "No .csproj files found in the solution directory." -ForegroundColor Yellow
+# Ask for confirmation
+$confirmation = Read-Host "`nDo you want to proceed with these operations? (Y/N)"
+if ($confirmation -ne 'Y' -and $confirmation -ne 'y') {
+    Write-Host "Operation cancelled by user." -ForegroundColor Yellow
     exit
 }
 
-# Loop through each project and install the packages
-foreach ($project in $projects) {
-    Write-Host "Installing packages for project: $($project.FullName)" -ForegroundColor Cyan
+# Start automated process
+Write-Host "`nStarting automated process..." -ForegroundColor Green
 
-    foreach ($package in $packages) {
-        Write-Host "Installing package: $package" -ForegroundColor Green
-        dotnet add $project.FullName package $package
-    }
+# Install packages
+Write-Host "`nInstalling required packages..." -ForegroundColor Cyan
+
+# Define the packages and versions
+$packages = @(
+    "Microsoft.EntityFrameworkCore.SqlServer",
+    "Microsoft.EntityFrameworkCore.Tools",
+    "Microsoft.EntityFrameworkCore.Design",
+    "Microsoft.Extensions.Configuration",
+    "Microsoft.Extensions.Configuration.Json"
+)
+
+# Install packages for each project
+Write-Host "Installing packages for Repository project..." -ForegroundColor Green
+Push-Location $repoPath
+foreach ($package in $packages) {
+    Write-Host "Installing package: $package" -ForegroundColor Yellow
+    dotnet add package $package --version 8.0.2
+}
+Pop-Location
+
+Write-Host "`nInstalling packages for Service project..." -ForegroundColor Green
+Push-Location $servicePath
+foreach ($package in $packages) {
+    Write-Host "Installing package: $package" -ForegroundColor Yellow
+    dotnet add package $package --version 8.0.2
+}
+Pop-Location
+
+Write-Host "`nInstalling packages for WPF project..." -ForegroundColor Green
+Push-Location $wpfPath
+foreach ($package in $packages) {
+    Write-Host "Installing package: $package" -ForegroundColor Yellow
+    dotnet add package $package --version 8.0.2
+}
+Pop-Location
+
+Write-Host "`nPackage installation completed!" -ForegroundColor Green
+
+# Add project references
+Write-Host "`nAdding project references..." -ForegroundColor Cyan
+Write-Host "Adding reference from $wpfProjectName to $serviceProjectName" -ForegroundColor Green
+dotnet add "$wpfProjectFile" reference "$serviceProjectFile"
+Write-Host "Adding reference from $serviceProjectName to $repoProjectName" -ForegroundColor Green
+dotnet add "$serviceProjectFile" reference "$repoProjectFile"
+
+# Generate database context
+Write-Host "`nGenerating database context..." -ForegroundColor Cyan
+$modelsPath = Join-Path $repoPath "Models"
+if (!(Test-Path $modelsPath)) {
+    New-Item -ItemType Directory -Path $modelsPath -Force
 }
 
-Write-Host "Adding project references..." -ForegroundColor Cyan
+# Execute the Scaffold-DbContext command using dotnet ef
+Write-Host "Running Scaffold-DbContext for database: $databaseName" -ForegroundColor Cyan
 
-# Add reference from WPF to Service
-Write-Host "Adding reference from $wpfProjectName to $serviceProjectName" -ForegroundColor Green
-dotnet add "$wpfPath\$wpfProjectName.csproj" reference "$servicePath\$serviceProjectName.csproj"
+# Build the scaffold command with proper parameters
+$command = "dotnet ef dbcontext scaffold `"$connectionString`" " + `
+    "Microsoft.EntityFrameworkCore.SqlServer " + `
+    "--output-dir Models " + `
+    "--context $contextName " + `
+    "--project `"$repoProjectFile`" " + `
+    "--startup-project `"$wpfProjectFile`" " + `
+    "--force"
 
-# Add reference from Service to Repository
-Write-Host "Adding reference from $serviceProjectName to $repoProjectName" -ForegroundColor Green
-dotnet add "$servicePath\$serviceProjectName.csproj" reference "$repoPath\$repoProjectName.csproj"
+Write-Host "Executing command: $command" -ForegroundColor Yellow
 
-Write-Host "Project references added successfully!" -ForegroundColor Green
-Write-Host "Starting repository and service generation..." -ForegroundColor Cyan
+# Change to the solution directory before running the command
+Push-Location $solutionDir
+try {
+    Invoke-Expression $command
+    Write-Host "Scaffolding completed successfully!" -ForegroundColor Green
+} catch {
+    Write-Host "Error during scaffolding: $_" -ForegroundColor Red
+    Pop-Location
+    exit
+}
+Pop-Location
+
+# Continue with repository and service generation
+Write-Host "`nStarting repository and service generation..." -ForegroundColor Cyan
 
 # Define paths for Models, Repositories, and IRepositories
-$modelsPath = "$repoPath\Models"
 $repositoriesPath = "$repoPath\Repositories"
 $iRepositoriesPath = "$repoPath\IRepositories"
 $outputServicePath = "$servicePath\Services"
