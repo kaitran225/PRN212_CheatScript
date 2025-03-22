@@ -1,10 +1,58 @@
 # Prompt user for project directories
 $repoPath = Read-Host "Enter the full path of the Repository project"
 $servicePath = Read-Host "Enter the full path of the Services project"
+$wpfPath = Read-Host "Enter the full path of the main WPF project"
 
 # Extract project names
 $repoProjectName = Split-Path -Path $repoPath -Leaf
 $serviceProjectName = Split-Path -Path $servicePath -Leaf
+$wpfProjectName = Split-Path -Path $wpfPath -Leaf
+
+# Get solution directory (parent of repository project)
+$solutionDir = Split-Path -Path $repoPath -Parent
+
+# Define the packages and versions
+$packages = @(
+    "Microsoft.EntityFrameworkCore.SqlServer -Version 8.0.2",
+    "Microsoft.EntityFrameworkCore.Tools -Version 8.0.2",
+    "Microsoft.EntityFrameworkCore.Design -Version 8.0.2",
+    "Microsoft.Extensions.Configuration -Version 8.0.2",
+    "Microsoft.Extensions.Configuration.Json -Version 8.0.2"
+)
+
+Write-Host "Installing required packages..." -ForegroundColor Cyan
+
+# Get all .csproj files in the solution directory
+$projects = Get-ChildItem -Path $solutionDir -Recurse -Filter *.csproj
+
+# Check if any .csproj files were found
+if ($projects.Count -eq 0) {
+    Write-Host "No .csproj files found in the solution directory." -ForegroundColor Yellow
+    exit
+}
+
+# Loop through each project and install the packages
+foreach ($project in $projects) {
+    Write-Host "Installing packages for project: $($project.FullName)" -ForegroundColor Cyan
+
+    foreach ($package in $packages) {
+        Write-Host "Installing package: $package" -ForegroundColor Green
+        dotnet add $project.FullName package $package
+    }
+}
+
+Write-Host "Adding project references..." -ForegroundColor Cyan
+
+# Add reference from WPF to Service
+Write-Host "Adding reference from $wpfProjectName to $serviceProjectName" -ForegroundColor Green
+dotnet add "$wpfPath\$wpfProjectName.csproj" reference "$servicePath\$serviceProjectName.csproj"
+
+# Add reference from Service to Repository
+Write-Host "Adding reference from $serviceProjectName to $repoProjectName" -ForegroundColor Green
+dotnet add "$servicePath\$serviceProjectName.csproj" reference "$repoPath\$repoProjectName.csproj"
+
+Write-Host "Project references added successfully!" -ForegroundColor Green
+Write-Host "Starting repository and service generation..." -ForegroundColor Cyan
 
 # Define paths for Models, Repositories, and IRepositories
 $modelsPath = "$repoPath\Models"
