@@ -1,0 +1,76 @@
+PE_PRN212_SP25_TrialTest
+SPRING 2025
+Subject: PRN212
+Duration: 90 minutes
+
+INSTRUCTIONS
+Please read the instructions carefully before doing the questions.
+•	You are NOT allowed to use any other materials. You are NOT allowed to use any device to share data with others.
+•	You must use IDE as Visual Studio 2019 or later, MSSQL Server 2016 or later database for your development tools.  
+IMPORTANT – Before you start doing your solution, MUST do the following steps:
+1.	To do your program, you must use Windows Presentation Foundation (WPF), apply 3-Layer architecture, there are at least 2 Projects for the Solution. The database connection string must get from appsettings.json file. 
+In the case your program connects directly to database from WPF Windows/Pages or you hardcode connection string, you will get 0 point.
+2.	Create Solution in Visual Studio 2019/2022 named PE_PRN212_SP25_TrialTest_StudentName.  Inside the Solution, Project WPF named: PerfumeManagement_StudentCode.
+3.	Create your MS SQL database named Sp25PerfumeStoreDB by running code in script Sp25PerfumeStoreDB.sql. 
+4.	Set the default user interface for your project as Login window/page.
+5.	If there are syntax errors or compilation errors in your PE program, you will not pass the PE requirements, the point will be 0.
+6.	Your work will be considered invalid (0 point) if your code inserts stuff that is unrelated to the test.
+
+
+Create an application using Windows Presentation Foundation (WPF) with .NET5/.NET6/.NET7/.NET8, C#, and Entity Framework Core. A MS SQL Server database will be created to persist the data and it will be used for reading and managing data.
+The below Figure is a part of Sp25PerfumeStoreDB database. 
+
+ 
+Note that: Role: Administrator = 1; Manager = 2; Staff = 3; Member = 4. 
+
+Task 1. Design graphic user interface.
+1.	(0.5 point) Design Login Window includes UI controls for login function.
+Object Type	Properties
+Window	Title=Login Window Fall 2024
+Height= 400
+Width= 700 
+FontFamily= Tahoma
+FontSize= 13 
+Background=  #FFDDE769  
+WindowStartupLocation: CenterScreen 
+Label	Font: Arial Narrow, 12pt
+ForeColor: #FF3324A8  
+TextBox	TextAlignment: Right
+BackColor: ##FFF3CFCF  
+
+2.	(1.0 point) Design Perfume Management window/page, this window/page includes UI controls for CRUD actions with perfume information. Note: The ProductionCompanyID/ProductionCompanyName will come from the ProductionCompany table. Design a window which allows you to view the list of records, create a new item, update the existing item, and delete a specific item.
+
+Object Type	Properties
+Window	Title= Fall 2024- Main PE Management 
+Height= 500
+Width= 800 
+FontFamily= Tahoma
+FontSize= 13 
+Background= #FFDDE769  
+WindowStartupLocation= CenterScreen 
+Label	Font=Tahoma, 13pt
+ForeColor= #FF3324A8  
+HorizontalAlignment=Left
+TextBox	TextAlignment=Right
+BackColor: ##FFF3CFCF  
+
+Task 2. Implement CRUD actions with GUI.
+3.	(1.0 point) Authentication function
+If user with a Manager and Staff role logs in successfully (using email address/password for login process), save this information to a temporary parameter. All CRUD actions are required authentication. In the case login unsuccessfully, display “You have no permission to access this function!”.
+	All CRUD actions are required with Manager role, 
+	Staff role is required for only Read action.
+
+4.	(1.5 points) Check if login successfully with Manager and Staff role, list all items in PerfumeInformation table (each record includes information of PerfumeInformation and “ProductionCompanyName”). 
+
+5.	(1.5 point) Check if login successfully with Manager role, search perfume information by “Ingredients” or “Concentration” (using relative search). The result must be group by “Ingredients” attribute.
+
+6.	(1.0 point) Check if login successfully with Manager role, delete the selected item with the confirmation then update the list of items.
+
+7.	(2.0 points) Check if login successfully with Manager role, add new item with the requirements:
+-	The ProductionCompanyID/ ProductionCompanyName will come from the ProductionCompany table (you can use ComboBox UI control in this case) 
+-	All fields are required.
+-	Value for PerfumeName (the name of the perfume) is in the range of 5 – 90 characters. Each word of the PerfumeName must begin with the capital letter or digits (1 – 9). PerfumeName is not allowed with special characters such as $,%,^, @.
+
+8.	(1.5 points) Check if login successfully with Manager role, update an existing item.
+-	You can use your different window/page or use the data grid view for this update function (update by PerfumeID). 
+-	With update function, the same validation requirements with Add function.

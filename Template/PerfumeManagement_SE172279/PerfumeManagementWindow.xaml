@@ -1,0 +1,316 @@
+<Window x:Class="PerfumeManagement_SE172279.PerfumeManagementWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PerfumeManagement_SE172279"
+        mc:Ignorable="d"
+        Title="Fall 2024- Main PE Management" 
+        Height="500" 
+        Width="800" 
+        FontFamily="Tahoma" 
+        FontSize="13" 
+        Background="#FFDDE769" 
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header with user info -->
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <TextBlock Text="Logged in as: " FontWeight="Bold"/>
+                <TextBlock x:Name="txtUserInfo" Margin="5,0,0,0"/>
+                <TextBlock Text=" | Role: " FontWeight="Bold" Margin="10,0,0,0"/>
+                <TextBlock x:Name="txtUserRole" Margin="5,0,0,0"/>
+            </StackPanel>
+            
+            <Button 
+                Grid.Column="1" 
+                x:Name="btnLogout" 
+                Content="Logout" 
+                Width="80" 
+                Height="25" 
+                Background="#FF79B4F3" 
+                Foreground="White" 
+                Click="btnLogout_Click"/>
+        </Grid>
+        
+        <!-- Search Panel -->
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <Label 
+                Grid.Column="0" 
+                Content="Search:" 
+                VerticalAlignment="Center"
+                FontFamily="Tahoma"
+                FontSize="13"
+                Foreground="#FF3324A8"
+                HorizontalAlignment="Left"/>
+            
+            <TextBox 
+                Grid.Column="1" 
+                x:Name="txtSearch" 
+                Margin="5,0" 
+                Height="25"
+                TextAlignment="Right"
+                Background="#FFF3CFCF"/>
+            
+            <Button 
+                Grid.Column="2" 
+                x:Name="btnSearch" 
+                Content="Search" 
+                Margin="5,0" 
+                Width="80" 
+                Height="25"
+                Click="btnSearch_Click"/>
+            
+            <Button 
+                Grid.Column="3" 
+                x:Name="btnClearSearch" 
+                Content="Clear" 
+                Margin="5,0" 
+                Width="80" 
+                Height="25"
+                Click="btnClearSearch_Click"/>
+        </Grid>
+        
+        <!-- DataGrid for Perfumes -->
+        <DataGrid 
+            Grid.Row="2" 
+            x:Name="dgPerfumes" 
+            AutoGenerateColumns="False" 
+            IsReadOnly="True"
+            SelectionMode="Single"
+            SelectionChanged="dgPerfumes_SelectionChanged"
+            Margin="0,0,0,10">
+            <DataGrid.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="#FF3324A8" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                </GroupStyle>
+            </DataGrid.GroupStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID" Binding="{Binding PerfumeId}" Width="80"/>
+                <DataGridTextColumn Header="Perfume Name" Binding="{Binding PerfumeName}" Width="150"/>
+                <DataGridTextColumn Header="Ingredients" Binding="{Binding Ingredients}" Width="150"/>
+                <DataGridTextColumn Header="Concentration" Binding="{Binding Concentration}" Width="100"/>
+                <DataGridTextColumn Header="Longevity" Binding="{Binding Longevity}" Width="100"/>
+                <DataGridTextColumn Header="Release Date" Binding="{Binding ReleaseDate, StringFormat=\{0:dd/MM/yyyy\}}" Width="100"/>
+                <DataGridTextColumn Header="Company" Binding="{Binding ProductionCompanyName}" Width="120"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        
+        <!-- Form for adding/editing perfumes -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Left side form -->
+            <GroupBox Grid.Column="0" Header="Perfume Details" Margin="0,0,5,0">
+                <Grid Margin="5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- ID -->
+                    <Label 
+                        Grid.Row="0" Grid.Column="0"
+                        Content="Perfume ID:" 
+                        FontFamily="Tahoma"
+                        FontSize="13"
+                        Foreground="#FF3324A8"
+                        HorizontalAlignment="Left"/>
+                    <TextBox 
+                        Grid.Row="0" Grid.Column="1"
+                        x:Name="txtPerfumeId" 
+                        Margin="5,2" 
+                        TextAlignment="Right"
+                        Background="#FFF3CFCF"/>
+                    
+                    <!-- Name -->
+                    <Label 
+                        Grid.Row="1" Grid.Column="0"
+                        Content="Perfume Name:" 
+                        FontFamily="Tahoma"
+                        FontSize="13"
+                        Foreground="#FF3324A8"
+                        HorizontalAlignment="Left"/>
+                    <TextBox 
+                        Grid.Row="1" Grid.Column="1"
+                        x:Name="txtPerfumeName" 
+                        Margin="5,2" 
+                        TextAlignment="Right"
+                        Background="#FFF3CFCF"/>
+                    
+                    <!-- Ingredients -->
+                    <Label 
+                        Grid.Row="2" Grid.Column="0"
+                        Content="Ingredients:" 
+                        FontFamily="Tahoma"
+                        FontSize="13"
+                        Foreground="#FF3324A8"
+                        HorizontalAlignment="Left"/>
+                    <TextBox 
+                        Grid.Row="2" Grid.Column="1"
+                        x:Name="txtIngredients" 
+                        Margin="5,2" 
+                        TextAlignment="Right"
+                        Background="#FFF3CFCF"/>
+                        
+                    <!-- Concentration -->
+                    <Label 
+                        Grid.Row="3" Grid.Column="0"
+                        Content="Concentration:" 
+                        FontFamily="Tahoma"
+                        FontSize="13"
+                        Foreground="#FF3324A8"
+                        HorizontalAlignment="Left"/>
+                    <TextBox 
+                        Grid.Row="3" Grid.Column="1"
+                        x:Name="txtConcentration" 
+                        Margin="5,2" 
+                        TextAlignment="Right"
+                        Background="#FFF3CFCF"/>
+                </Grid>
+            </GroupBox>
+            
+            <!-- Right side form -->
+            <GroupBox Grid.Column="1" Header="Additional Details" Margin="5,0,0,0">
+                <Grid Margin="5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Longevity -->
+                    <Label 
+                        Grid.Row="0" Grid.Column="0"
+                        Content="Longevity:" 
+                        FontFamily="Tahoma"
+                        FontSize="13"
+                        Foreground="#FF3324A8"
+                        HorizontalAlignment="Left"/>
+                    <TextBox 
+                        Grid.Row="0" Grid.Column="1"
+                        x:Name="txtLongevity" 
+                        Margin="5,2" 
+                        TextAlignment="Right"
+                        Background="#FFF3CFCF"/>
+                    
+                    <!-- Release Date -->
+                    <Label 
+                        Grid.Row="1" Grid.Column="0"
+                        Content="Release Date:" 
+                        FontFamily="Tahoma"
+                        FontSize="13"
+                        Foreground="#FF3324A8"
+                        HorizontalAlignment="Left"/>
+                    <DatePicker 
+                        Grid.Row="1" Grid.Column="1"
+                        x:Name="dpReleaseDate" 
+                        Margin="5,2"/>
+                    
+                    <!-- Production Company -->
+                    <Label 
+                        Grid.Row="2" Grid.Column="0"
+                        Content="Company:" 
+                        FontFamily="Tahoma"
+                        FontSize="13"
+                        Foreground="#FF3324A8"
+                        HorizontalAlignment="Left"/>
+                    <ComboBox 
+                        Grid.Row="2" Grid.Column="1"
+                        x:Name="cboCompany" 
+                        Margin="5,2"
+                        DisplayMemberPath="ProductionCompanyName"
+                        SelectedValuePath="ProductionCompanyId"
+                        Background="#FFF3CFCF"/>
+                    
+                    <!-- Error message -->
+                    <TextBlock 
+                        Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" 
+                        x:Name="txtErrorMsg"
+                        Foreground="Red"
+                        TextWrapping="Wrap"
+                        Margin="5,10"/>
+                    
+                    <!-- Buttons -->
+                    <StackPanel 
+                        Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" 
+                        Orientation="Horizontal" 
+                        HorizontalAlignment="Center">
+                        <Button 
+                            x:Name="btnAdd" 
+                            Content="Add New" 
+                            Width="90" 
+                            Height="30" 
+                            Margin="5"
+                            Click="btnAdd_Click"/>
+                        <Button 
+                            x:Name="btnUpdate" 
+                            Content="Update" 
+                            Width="90" 
+                            Height="30" 
+                            Margin="5"
+                            Click="btnUpdate_Click"/>
+                        <Button 
+                            x:Name="btnDelete" 
+                            Content="Delete" 
+                            Width="90" 
+                            Height="30" 
+                            Margin="5"
+                            Click="btnDelete_Click"/>
+                        <Button 
+                            x:Name="btnClear" 
+                            Content="Clear Form" 
+                            Width="90" 
+                            Height="30" 
+                            Margin="5"
+                            Click="btnClear_Click"/>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+        </Grid>
+    </Grid>
+</Window> 
