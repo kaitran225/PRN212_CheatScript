@@ -15,6 +15,32 @@ Write-Host "1. Two projects (Repository and Service in same project)"
 Write-Host "2. Three projects (Separate Repository, Service, and WPF projects)"
 $structureChoice = Read-Host "Enter your choice (1 or 2)"
 
+# Ask if user wants to input custom project names
+Write-Host "`nDo you want to input custom project names?" -ForegroundColor Yellow
+Write-Host "1. Use default names (based on solution name)"
+Write-Host "2. Input custom names"
+$nameChoice = Read-Host "Enter your choice (1 or 2)"
+
+if ($nameChoice -eq "2") {
+    if ($structureChoice -eq "1") {
+        $wpfAppName = (Read-Host "Enter WPF project name").Trim()
+        $libraryName = (Read-Host "Enter Library project name").Trim()
+    } else {
+        $wpfAppName = (Read-Host "Enter WPF project name").Trim()
+        $serviceName = (Read-Host "Enter Service project name").Trim()
+        $repoName = (Read-Host "Enter Repository project name").Trim()
+    }
+} else {
+    if ($structureChoice -eq "1") {
+        $wpfAppName = "$solutionName.App"
+        $libraryName = "$solutionName.Library"
+    } else {
+        $wpfAppName = "$solutionName.App"
+        $serviceName = "$solutionName.Service"
+        $repoName = "$solutionName.Repository"
+    }
+}
+
 # Validate solution exists
 $solutionFile = Join-Path $solutionPath "$solutionName.sln"
 if (-not (Test-Path $solutionFile)) {
@@ -27,9 +53,6 @@ Set-Location -Path $solutionPath
 
 if ($structureChoice -eq "1") {
     # Two-project structure
-    $wpfAppName = "$solutionName.App"
-    $libraryName = "$solutionName.Library"
-    
     Write-Host "`nCreating projects..." -ForegroundColor Green
     Write-Host "Creating WPF Application: $wpfAppName"
     dotnet new wpf -n $wpfAppName
@@ -49,10 +72,6 @@ if ($structureChoice -eq "1") {
     Write-Host "`nTwo-project solution created successfully!" -ForegroundColor Green
 } else {
     # Three-project structure
-    $wpfAppName = "$solutionName.App"
-    $serviceName = "$solutionName.Service"
-    $repoName = "$solutionName.Repository"
-    
     Write-Host "`nCreating projects..." -ForegroundColor Green
     Write-Host "Creating WPF Application: $wpfAppName"
     dotnet new wpf -n $wpfAppName
@@ -76,6 +95,33 @@ if ($structureChoice -eq "1") {
     
     Write-Host "`nThree-project solution created successfully!" -ForegroundColor Green
 }
+
+# Create appsettings.json in WPF project
+Write-Host "`nCreating appsettings.json..." -ForegroundColor Green
+$appSettingsContent = @"
+{
+  "ConnectionStrings": {
+    "PerfumeDb": "Server=KAINOTE\\SQLEXPRESS;Database=$databaseName;User Id=sa;Password=123456;TrustServerCertificate=True;"
+  }
+}
+"@
+
+# Create appsettings.json in WPF project
+$appSettingsPath = Join-Path $wpfAppName "appsettings.json"
+Set-Content -Path $appSettingsPath -Value $appSettingsContent
+
+# Modify WPF project file to set appsettings.json properties
+$wpfProjectFile = Join-Path $wpfAppName "$wpfAppName.csproj"
+$projectContent = Get-Content $wpfProjectFile -Raw
+$projectContent = $projectContent.Replace("</Project>", @"
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>
+"@)
+Set-Content -Path $wpfProjectFile -Value $projectContent
 
 # Define SQL Server credentials and connection settings
 $serverName = "KAINOTE\SQLEXPRESS"    # SQL Server instance name
