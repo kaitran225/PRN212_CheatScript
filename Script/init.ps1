@@ -206,6 +206,8 @@ $command = "dotnet ef dbcontext scaffold `"$connectionString`" " + `
     "Microsoft.EntityFrameworkCore.SqlServer " + `
     "--output-dir Models " + `
     "--context $contextName " + `
+    "--namespace $repoName.Models " + `
+    "--context-namespace $repoName.Models " + `
     "--project `"$repoName\$repoName.csproj`" " + `
     "--startup-project `"$wpfAppName\$wpfAppName.csproj`" " + `
     "--force"
@@ -416,8 +418,8 @@ namespace $repoName.Repositories
 
 # Add repository fields to UnitOfWork with unique names
 foreach ($entityName in $entities) {
-    $repoName = $entityName.ToLower()
-    $fieldName = "_${repoName}Repository"
+    $repositoryName = $entityName.ToLower()
+    $fieldName = "_${repositoryName}Repository"
     $unitOfWorkContent += @"
         private I${entityName}Repository $fieldName;
 
@@ -435,8 +437,8 @@ $unitOfWorkContent += @"
 
 # Add repository properties to UnitOfWork with unique names
 foreach ($entityName in $entities) {
-    $repoName = $entityName.ToLower()
-    $fieldName = "_${repoName}Repository"
+    $repositoryName = $entityName.ToLower()
+    $fieldName = "_${repositoryName}Repository"
     $unitOfWorkContent += @"
 
         public I${entityName}Repository ${entityName}
@@ -606,17 +608,12 @@ Write-Output "Generating entity repositories and services..."
 
 # Generate entity repositories and services
 foreach ($entityName in $entities) {
-    $namespace = "$repoName.IRepositories"
-    $repoNamespace = "$repoName.Repositories"
-    $serviceNamespace = "$serviceName.Services"
-    $iServiceNamespace = "$serviceName.IServices"
-
     # Interface content
     $interfaceContent = @"
 using System.Collections.Generic;
 using $repoName.Models;
 
-namespace $namespace
+namespace $repoName.IRepositories
 {
     public interface I${entityName}Repository : IRepositoryBase<${entityName}>
     {
@@ -627,11 +624,11 @@ namespace $namespace
     # Repository class content
     $repositoryContent = @"
 using $repoName.Models;
-using $namespace;
+using $repoName.IRepositories;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace $repoNamespace
+namespace $repoName.Repositories
 {
     public class ${entityName}Repository : RepositoryBase<${entityName}>, I${entityName}Repository
     {
@@ -649,7 +646,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using $repoName.Models;
 
-namespace $iServiceNamespace
+namespace $serviceName.IServices
 {
     public interface I${entityName}Service : IServiceBase<${entityName}>
     {
@@ -663,10 +660,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using $repoName.Models;
-using $namespace;
-using $iServiceNamespace;
+using $repoName.IRepositories;
+using $serviceName.IServices;
 
-namespace $serviceNamespace
+namespace $serviceName.Services
 {
     public class ${entityName}Service : ServiceBase<${entityName}>, I${entityName}Service
     {
