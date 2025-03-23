@@ -168,38 +168,32 @@ $packages = @(
 Write-Host "Installing packages for Repository project..." -ForegroundColor Green
 Push-Location $repoName
 foreach ($package in $packages) {
-    Write-Host "Installing package: $package" -ForegroundColor Yellow
-    dotnet add package $package --version 8.0.2
+    dotnet add package $package --version 8.0.2 --quiet
 }
 Pop-Location
 
-Write-Host "`nInstalling packages for Service project..." -ForegroundColor Green
+Write-Host "Installing packages for Service project..." -ForegroundColor Green
 Push-Location $serviceName
 foreach ($package in $packages) {
-    Write-Host "Installing package: $package" -ForegroundColor Yellow
-    dotnet add package $package --version 8.0.2
+    dotnet add package $package --version 8.0.2 --quiet
 }
 Pop-Location
 
-Write-Host "`nInstalling packages for WPF project..." -ForegroundColor Green
+Write-Host "Installing packages for WPF project..." -ForegroundColor Green
 Push-Location $wpfAppName
 foreach ($package in $packages) {
-    Write-Host "Installing package: $package" -ForegroundColor Yellow
-    dotnet add package $package --version 8.0.2
+    dotnet add package $package --version 8.0.2 --quiet
 }
 Pop-Location
 
-Write-Host "`nPackage installation completed!" -ForegroundColor Green
+Write-Host "Package installation completed!" -ForegroundColor Green
 
 # Generate database context
 Write-Host "`nGenerating database context..." -ForegroundColor Cyan
 $modelsPath = Join-Path $repoName "Models"
 if (!(Test-Path $modelsPath)) {
-    New-Item -ItemType Directory -Path $modelsPath -Force
+    New-Item -ItemType Directory -Path $modelsPath -Force | Out-Null
 }
-
-# Execute the Scaffold-DbContext command using dotnet ef
-Write-Host "Running Scaffold-DbContext for database: $databaseName" -ForegroundColor Cyan
 
 # Build the scaffold command with proper parameters
 $command = "dotnet ef dbcontext scaffold `"$connectionString`" " + `
@@ -210,15 +204,14 @@ $command = "dotnet ef dbcontext scaffold `"$connectionString`" " + `
     "--context-namespace $repoName.Models " + `
     "--project `"$repoName\$repoName.csproj`" " + `
     "--startup-project `"$wpfAppName\$wpfAppName.csproj`" " + `
-    "--force"
-
-Write-Host "Executing command: $command" -ForegroundColor Yellow
+    "--force " + `
+    "--quiet"
 
 # Change to the solution directory before running the command
 Push-Location $solutionPath
 try {
-    Invoke-Expression $command
-    Write-Host "Scaffolding completed successfully!" -ForegroundColor Green
+    Invoke-Expression $command 2>&1 | Out-Null
+    Write-Host "Database context generated successfully!" -ForegroundColor Green
 } catch {
     Write-Host "Error during scaffolding: $_" -ForegroundColor Red
     Pop-Location
